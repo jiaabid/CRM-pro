@@ -1,0 +1,228 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+model role {
+  id          Int               @id @default(autoincrement())
+  name        String
+  parentId    Int?
+  parent      role?             @relation("parent", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  parents     role[]            @relation("parent")
+  isApproved  Boolean           @default(false)
+  isDeleted   Boolean           @default(false)
+  createdBy   Int?
+  updatedBy   Int?
+  deletedBy   Int?
+  approvedBy  Int?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime?
+  deletedAt   DateTime?
+  approvedAt  DateTime?
+  users       user[]
+  permissions role_permission[]
+}
+
+model permission {
+  id         Int               @id @default(autoincrement())
+  name       String
+  canView    Boolean           @default(false)
+  canAdd     Boolean           @default(false)
+  canUpdate  Boolean           @default(false)
+  canDelete  Boolean           @default(false)
+  isApproved Boolean           @default(false)
+  isDeleted  Boolean           @default(false)
+  createdBy  Int?
+  updatedBy  Int?
+  deletedBy  Int?
+  approvedBy Int?
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime?
+  deletedAt  DateTime?
+  approvedAt DateTime?
+  roles      role_permission[]
+}
+
+model role_permission {
+  id           Int        @id @default(autoincrement())
+  roleId       Int
+  role         role       @relation(fields: [roleId], references: [id])
+  permissionId Int
+  permission   permission @relation(fields: [permissionId], references: [id])
+  name         String?
+  canAdd       Boolean?   @default(false)
+  canView      Boolean?   @default(false)
+  canUpdate    Boolean?   @default(false)
+  canDelete    Boolean?   @default(false)
+  isApproved   Boolean?   @default(false)
+  createdBy    Int?
+  approvedBy   Int?
+  createdAt    DateTime   @default(now())
+  approvedAt   DateTime?
+  // @@id([roleId,permissionId])
+}
+
+model department {
+  id         Int       @id @default(autoincrement())
+  name       String
+  isApproved Boolean   @default(false)
+  isDeleted  Boolean   @default(false)
+  createdBy  Int?
+  updatedBy  Int?
+  deletedBy  Int?
+  approvedBy Int?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime?
+  deletedAt  DateTime?
+  approvedAt DateTime?
+  user       user[]
+}
+
+model user {
+  id                 Int         @id @default(autoincrement())
+  firstname          String?
+  lastname           String?
+  email              String
+  password           String
+  roleId             Int
+  deptId             Int?
+  approverId         Int?
+  useActiveDirectory Boolean?    @default(false)
+  isActive           Boolean     @default(true)
+  isApproved         Boolean     @default(false)
+  isLogged           Boolean?    @default(false)
+  isDeleted          Boolean     @default(false)
+  createdBy          Int?
+  updatedBy          Int?
+  deletedBy          Int?
+  approvedBy         Int?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime?
+  deletedAt          DateTime?
+  approvedAt         DateTime?
+  lastLoginAt        DateTime?
+  role               role        @relation(fields: [roleId], references: [id])
+  department         department? @relation(fields: [deptId], references: [id])
+  employee           employee?
+  approvals approval[]
+}
+
+// model user_roles {
+//   id          Int     @id @default(autoincrement())
+//   roleId Int
+//   userId Int
+//   isDeleted Boolean @default(false) 
+//   assignedBy Int
+//   approvedBy Int
+//   assignedAt DateTime @default(now())
+//   approvedAt DateTime?
+//   deletedAt DateTime?
+
+// }
+model employee {
+  id          Int     @id @default(autoincrement())
+  title       String?
+  photo       String?
+  address     String?
+  contact     String?
+  // status Boolean? @default(true)
+  city        String?
+  region      String?
+  country     String?
+  postalCode  String?
+  description String?
+  userId      Int     @unique
+  user        user    @relation(fields: [userId], references: [id])
+}
+
+model approval {
+  id               Int       @id @default(autoincrement())
+  moduleName       String?
+  itemId           Int?
+  approvalType     String?
+  body             String?
+  isApproved       Boolean   @default(false)
+  isRejected       Boolean   @default(false)
+  rejectionMessage String?
+  assignTo         Int?
+  previousId       Int?
+  isDeleted        Boolean   @default(false)
+  createdBy        Int?
+  updatedBy        Int?
+  deletedBy        Int?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime?
+  deletedAt        DateTime?
+  approvedAt       DateTime?
+  approver user? @relation(fields: [assignTo], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model dbVariable {
+  id             Int                @id @default(autoincrement())
+  name           String
+  variableDetail dbVariableDetail[]
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime?
+}
+
+model dbVariableDetail {
+  id            Int         @id @default(autoincrement())
+  variableId    Int?
+  value         String
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime?
+  dbVariable    dbVariable? @relation(fields: [variableId], references: [id])
+  module        modules[]
+  requestMethod api[] // routing method post/get
+  fields        fields[] //for field type: request/response
+  // requestMethod api
+}
+
+model modules {
+  id           Int               @id @default(autoincrement())
+  name         String
+  moduleTypeId Int?
+  moduleType   dbVariableDetail? @relation(fields: [moduleTypeId], references: [id])
+  apis         api[]
+}
+
+model api {
+  id              Int               @id @default(autoincrement())
+  name            String
+  url             String
+  requestType     String
+  requestMethodId Int
+  moduleId        Int?
+  isDeleted       Boolean           @default(false)
+  createdBy       Int?
+  updatedBy       Int?
+  deletedBy       Int?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime?
+  deletedAt       DateTime?
+  // approvedAt     DateTime?
+  // requestType  dbVariableDetail? @relation(fields: [requestTypeId], references: [id])
+  requestMethod   dbVariableDetail? @relation(fields: [requestMethodId], references: [id])
+  module          modules?          @relation(fields: [moduleId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  fields          fields[]
+}
+
+model fields {
+  id          Int               @id @default(autoincrement())
+  name        String
+  label       String
+  datatype    String
+  required    Boolean
+  nullable    Boolean
+  routeId     Int
+  fieldTypeId Int
+  fieldType   dbVariableDetail? @relation(fields: [fieldTypeId], references: [id])
+  route       api?              @relation(fields: [routeId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
